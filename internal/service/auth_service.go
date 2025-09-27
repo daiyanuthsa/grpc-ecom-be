@@ -15,6 +15,8 @@ import (
 	"github.com/google/uuid"
 	gocache "github.com/patrickmn/go-cache"
 	"golang.org/x/crypto/bcrypt"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -99,6 +101,10 @@ func (s *authService) Login(ctx context.Context, request *auth.LoginRequest) (*a
 	//cek password
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(request.Password))
 	if err != nil {
+		if err == bcrypt.ErrMismatchedHashAndPassword {
+			return nil, status.Errorf(codes.Unauthenticated, "Invalid email or password")
+		}
+
 		return &auth.LoginResponse{
 			Base: utils.BadRequestResponse("Invalid email or password"),
 		}, nil
