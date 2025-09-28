@@ -44,3 +44,14 @@ func GetClaimsFromToken(token string) (*JWTClaims, error) {
 	}
 	return nil, utils.UnauthenticatedResponse()
 }
+
+func GetClaimsFromContext(ctx context.Context) (*JWTClaims, error) {
+	claims, ok := ctx.Value(JwtEntityContextValue).(*JWTClaims)
+	if !ok || claims == nil {
+		// Jika claims tidak ditemukan di context, berarti middleware Auth gagal dijalankan
+		// atau ini adalah endpoint publik yang tidak memerlukan auth. 
+		// Dalam skenario endpoint terproteksi, ini adalah bug/salah konfigurasi middleware.
+		return nil, utils.UnauthenticatedResponse()
+	}
+	return claims, nil
+}
