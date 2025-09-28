@@ -1,0 +1,7 @@
+ENVIRONMENT=dev
+
+DB_URI=
+
+
+JWT_SECRET=
+
