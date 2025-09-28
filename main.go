@@ -11,6 +11,7 @@ import (
 	"github.com/daiyanuthsa/grpc-ecom-be/internal/repository"
 	"github.com/daiyanuthsa/grpc-ecom-be/internal/service"
 	"github.com/daiyanuthsa/grpc-ecom-be/pb/auth"
+	"github.com/daiyanuthsa/grpc-ecom-be/pb/product"
 	gocache "github.com/patrickmn/go-cache"
 
 	"github.com/daiyanuthsa/grpc-ecom-be/internal/middleware"
@@ -45,8 +46,11 @@ func main() {
 	cacheService := gocache.New(time.Hour*24, time.Hour)
 	authMiddleware := middleware.NewAuthMiddleware(cacheService, publicEndpoints)
 	authService := service.NewAuthService(repository.NewAuthRepository(db), cacheService)
-
 	authHandler := handler.NewAuthHandler(authService)
+
+	productService := service.NewProductService(repository.NewProductRepository(db))
+	productHandler := handler.NewProductHandler(productService)
+	
 
 	serv := grpc.NewServer(
 		grpc.ChainUnaryInterceptor(
@@ -55,6 +59,7 @@ func main() {
 	)
 
 	auth.RegisterAuthServiceServer(serv, authHandler)
+	product.RegisterProductServiceServer(serv, productHandler)
 
 	if os.Getenv("ENVIRONMENT") == "dev" {
 		reflection.Register(serv)
