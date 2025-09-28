@@ -9,7 +9,10 @@ import (
 
 type IProductRepository interface {
 	CreateProduct(ctx context.Context, product *entity.Product) error
+	GetProductById(ctx context.Context, id string) (*entity.Product, error)
 }
+
+
 
 type productRepository struct {
 	db *sql.DB
@@ -22,6 +25,18 @@ func (r *productRepository) CreateProduct(ctx context.Context, product *entity.P
 		return err
 	}
 	return nil
+}
+
+func (r *productRepository) GetProductById(ctx context.Context, id string) (*entity.Product, error) {
+	row := r.db.QueryRowContext(ctx, "SELECT id, name, description, price, image_file_name FROM \"product\" WHERE id = $1 AND is_deleted = FALSE", id)
+	var product entity.Product
+	if err := row.Scan(&product.Id, &product.Name, &product.Description, &product.Price, &product.ImageFileName); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &product, nil
 
 }
 

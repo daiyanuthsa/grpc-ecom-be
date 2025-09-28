@@ -20,7 +20,13 @@ func BadRequestResponse(message string) *common.BaseResponse {
 		IsError:   true,
 	}
 }
-
+func NotFoundResponse(message string) *common.BaseResponse {
+	return &common.BaseResponse{
+		StatusCode: 404,
+		Message:    message,
+		IsError:   true,
+	}
+}
 func ValidationErrorResponse(validationErrors []*common.ValidationError) *common.BaseResponse {
 	return &common.BaseResponse{
 		StatusCode:       400,

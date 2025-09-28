@@ -41,6 +41,7 @@ func main() {
     publicEndpoints := []string{
         "/auth.AuthService/Login",
         "/auth.AuthService/Register", // Easy to add new ones!
+		"/product.ProductService/DetailProduct",
     }
 
 	cacheService := gocache.New(time.Hour*24, time.Hour)

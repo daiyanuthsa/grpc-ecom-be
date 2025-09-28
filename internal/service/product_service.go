@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/daiyanuthsa/grpc-ecom-be/internal/entity"
@@ -16,6 +17,7 @@ import (
 
 type IProductService interface {
 	CreateProduct(ctx context.Context, request *product.CreateProductRequest) (*product.CreateProductResponse, error)
+ DetailProduct(ctx context.Context, request *product.DetailProductRequest) (*product.DetailProductResponse, error)
 }
 
 type productService struct {
@@ -69,6 +71,27 @@ func (ps *productService) CreateProduct(ctx context.Context, request *product.Cr
 	}, nil
 }
 
+func (ps *productService) DetailProduct(ctx context.Context, request *product.DetailProductRequest) (*product.DetailProductResponse, error){
+	productData, err := ps.productRepository.GetProductById(ctx, request.Id)
+	if err != nil {
+		return nil, err
+	}
+	if productData == nil {
+		return &product.DetailProductResponse{
+			Base: utils.NotFoundResponse("Product not found"),
+		}, nil
+	}
+
+	return &product.DetailProductResponse{
+		Base: utils.SuccessResponse("Product retrieved successfully"),
+		Id:            productData.Id,
+		Name:          productData.Name,
+		Description:   productData.Description,
+		Price:         productData.Price,
+		ImageUrl: 		fmt.Sprintf("https://pub-8b5517dcca4c45d6b1ec071c478e3d39.r2.dev/%s",productData.ImageFileName),
+	}, nil
+
+}
 func NewProductService(productRepository repository.IProductRepository, storageService IStorageService) IProductService {
 	return &productService{
 		productRepository: productRepository,
