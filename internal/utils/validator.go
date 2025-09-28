@@ -2,6 +2,8 @@ package utils
 
 import (
 	"errors"
+	"mime/multipart"
+	"strings"
 
 	"buf.build/go/protovalidate"
 	"github.com/daiyanuthsa/grpc-ecom-be/pb/common"
@@ -25,4 +27,26 @@ func CheckValidation(req proto.Message) ([]*common.ValidationError, error) {
 		return nil, err
 	}
 	return make([]*common.ValidationError, 0), nil
+}
+
+type ImageValidator struct {
+    MaxSizeBytes int64
+    AllowedMimeTypes map[string]string
+}
+
+func (v *ImageValidator) Validate(file *multipart.FileHeader) error {
+    // 1. Cek Ukuran
+    if file.Size > v.MaxSizeBytes {
+        return errors.New("image size exceeds limit")
+    }
+
+    // 2. Cek MIME/Content-Type
+    contentType := strings.ToLower(file.Header.Get("Content-Type"))
+    _, mimeOk := v.AllowedMimeTypes[contentType]
+    if !mimeOk {
+        return errors.New("content type is not allowed")
+    }
+
+    
+    return nil
 }
