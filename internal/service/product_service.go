@@ -20,6 +20,7 @@ type IProductService interface {
 
 type productService struct {
 	productRepository repository.IProductRepository
+	storageService IStorageService
 }
 
 func (ps *productService) CreateProduct(ctx context.Context, request *product.CreateProductRequest) (*product.CreateProductResponse, error) {
@@ -34,6 +35,18 @@ func (ps *productService) CreateProduct(ctx context.Context, request *product.Cr
 		return nil, status.Errorf(codes.PermissionDenied, "Permission denied")
 	}
 	// TODO: Cek apakah request.ImageFileName tersedia
+	objectKey := request.ImageFileName
+	exists, err := ps.storageService.CheckIfObjectExists(ctx, objectKey)
+    if err != nil {
+        // Error koneksi atau sistem R2
+        return nil, status.Errorf(codes.Internal, "Storage service check failed: %v", err)
+    }
+	if !exists {
+        // File tidak ditemukan di R2 (Ini adalah error bisnis/validasi)
+        return &product.CreateProductResponse{
+            Base: utils.BadRequestResponse("Image file not found in storage. Please upload the image first."),
+        }, nil
+    }
 
 	newProduct := entity.Product{
 		Id:            uuid.NewString(),
@@ -56,8 +69,9 @@ func (ps *productService) CreateProduct(ctx context.Context, request *product.Cr
 	}, nil
 }
 
-func NewProductService(productRepository repository.IProductRepository) IProductService {
+func NewProductService(productRepository repository.IProductRepository, storageService IStorageService) IProductService {
 	return &productService{
 		productRepository: productRepository,
+		storageService: storageService,
 	}
 }
