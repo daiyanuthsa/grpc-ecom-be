@@ -19,6 +19,7 @@ import (
 type IStorageService interface {
 	UploadProductImage(ctx context.Context, file *multipart.FileHeader) (url string, key string, err error)
 	CheckIfObjectExists(ctx context.Context, key string) (bool, error)
+    DeleteObject(ctx context.Context, key string) error
 }
 
 type storageService struct {
@@ -99,6 +100,21 @@ func (s *storageService) CheckIfObjectExists(ctx context.Context, key string) (b
     // Jika tidak ada error, HeadObject berhasil dan objek ada
     return true, nil
 }
+func (s *storageService) DeleteObject(ctx context.Context, key string) error {
+	bucketName := os.Getenv("R2_BUCKET_NAME")
+
+	_, err := s.r2Client.DeleteObject(ctx, &s3.DeleteObjectInput{
+		Bucket: aws.String(bucketName),
+		Key:    aws.String(key),
+	})
+
+	if err != nil {
+		return fmt.Errorf("failed to delete object from R2: %w", err)
+	}
+	return nil
+}
+
+
 
 func NewStorageService(ctx context.Context) IStorageService {
 	r2, err := r2client.NewR2Client(ctx)
