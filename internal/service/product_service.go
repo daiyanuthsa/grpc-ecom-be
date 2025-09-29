@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"math"
 	"os"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 	jwtentity "github.com/daiyanuthsa/grpc-ecom-be/internal/entity/jwt"
 	"github.com/daiyanuthsa/grpc-ecom-be/internal/repository"
 	"github.com/daiyanuthsa/grpc-ecom-be/internal/utils"
+	"github.com/daiyanuthsa/grpc-ecom-be/pb/common"
 	"github.com/daiyanuthsa/grpc-ecom-be/pb/product"
 	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
@@ -20,6 +22,8 @@ type IProductService interface {
 	CreateProduct(ctx context.Context, request *product.CreateProductRequest) (*product.CreateProductResponse, error)
     DetailProduct(ctx context.Context, request *product.DetailProductRequest) (*product.DetailProductResponse, error)
 	UpdateProduct(ctx context.Context, request *product.UpdateProductRequest) (*product.UpdateProductResponse, error)
+	DeleteProduct(ctx context.Context, request *product.DeleteProductRequest) (*product.DeleteProductResponse, error)
+	ListProducts(ctx context.Context, request *product.ListProductsRequest) (*product.ListProductsResponse, error)
 }
 
 type productService struct {
@@ -151,6 +155,99 @@ func (ps *productService) UpdateProduct(ctx context.Context, request *product.Up
 		Base: utils.SuccessResponse("Product updated successfully"),
 		Id: productData.Id,
 	}, nil
+}
+
+func (ps *productService) DeleteProduct(ctx context.Context, request *product.DeleteProductRequest) (*product.DeleteProductResponse, error){
+	claims, err := jwtentity.GetClaimsFromContext(ctx)
+	if err != nil {
+		return nil, utils.UnauthenticatedResponse()
+	}	
+
+	if claims.RoleCode != entity.UserRoleAdmin {
+		return nil, status.Errorf(codes.PermissionDenied, "Permission denied")
+	}
+
+	productData, err := ps.productRepository.GetProductById(ctx, request.Id)
+	if err != nil {
+		return nil, err
+	}
+	if productData == nil {
+		return &product.DeleteProductResponse{
+			Base: utils.NotFoundResponse("Product not found"),
+		}, nil
+	}
+
+	productData.IsDeleted = true
+	productData.DeletedAt = time.Now()
+	productData.DeletedBy = &claims.FullName
+
+	err = ps.productRepository.DeleteProduct(ctx, time.Now(), claims.FullName, productData.Id)
+	if err != nil {
+		return nil, err
+	}
+
+	if productData.ImageFileName != "" {
+		delErr := ps.storageService.DeleteObject(ctx, productData.ImageFileName)
+		if delErr != nil {
+			fmt.Printf("Failed to delete image %s from storage during product deletion: %v\n", productData.ImageFileName, delErr)
+		}
+	}
+
+	return &product.DeleteProductResponse{
+		Base: utils.SuccessResponse("Product deleted successfully"),
+	}, nil
+}
+func (ps *productService) ListProducts(ctx context.Context, request *product.ListProductsRequest) (*product.ListProductsResponse, error){
+	//  Nilai Default Pagination
+    const DefaultPage int32 = 1
+    const DefaultLimit int32 = 10
+    
+    // Ambil parameter dari request, gunakan default jika kosong/nol
+    page := request.GetPagination().GetPage()
+	limit := request.GetPagination().GetLimit()
+    
+    if page == 0 {
+		page = DefaultPage 
+	}
+	if limit == 0 {
+		limit = DefaultLimit 
+	}
+
+    products, totalElements, err := ps.productRepository.ListProducts(ctx, page, limit)
+    if err != nil {
+        return nil, err
+    }
+    
+    // 3. Hitung Total Pages
+    totalPages := int32(math.Ceil(float64(totalElements) / float64(limit)))
+    if totalElements == 0 {
+        totalPages = 0
+    }
+
+    // 4. Transformasi ke Protobuf Response
+    productsData := make([]*product.Product, 0, len(products))
+
+    for _, p := range products {
+        productsData = append(productsData, &product.Product{
+            Id:          p.Id,
+            Name:        p.Name,
+            Description: p.Description,
+            Price:       p.Price,
+            ImageUrl:    fmt.Sprintf("%s/%s", os.Getenv("R2_PUBLIC_DOMAIN"), p.ImageFileName),
+        })
+    }
+
+    // 5. Kembalikan Response Akhir
+    return &product.ListProductsResponse{
+        Base: utils.SuccessResponse("Products retrieved successfully"),
+        Pagination: &common.PaginationResponse{
+            Page:          page,
+            Limit:         limit,
+            TotalPages:    totalPages,
+            TotalElements: totalElements,
+        },
+        Products: productsData,
+    }, nil
 }
 
 func NewProductService(productRepository repository.IProductRepository, storageService IStorageService) IProductService {

@@ -66,6 +66,40 @@ func (ph *productHandler) UpdateProduct(ctx context.Context, request *product.Up
 	}
 	return res, nil
 }
+
+func (ph *productHandler) DeleteProduct(ctx context.Context, request *product.DeleteProductRequest) (*product.DeleteProductResponse, error){
+	validationErrors, err := utils.CheckValidation(request)
+	if err != nil {
+		return nil, err
+	}
+	if len(validationErrors) > 0 {
+		return &product.DeleteProductResponse{
+			Base: utils.ValidationErrorResponse(validationErrors),
+		}, nil
+	}
+	res, err := ph.productService.DeleteProduct(ctx, request)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (ph *productHandler) ListProducts(ctx context.Context, request *product.ListProductsRequest) (*product.ListProductsResponse, error){
+	validationErrors, err := utils.CheckValidation(request)
+	if err != nil {
+		return nil, err
+	}
+	if len(validationErrors) > 0 {
+		return &product.ListProductsResponse{
+			Base: utils.ValidationErrorResponse(validationErrors),
+		}, nil
+	}
+	res, err := ph.productService.ListProducts(ctx, request)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
 func NewProductHandler(productService service.IProductService) *productHandler {
 	return &productHandler{
 		productService: productService,
