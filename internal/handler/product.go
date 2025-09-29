@@ -50,7 +50,22 @@ func (ph *productHandler) DetailProduct(ctx context.Context, request *product.De
 	}
 	return res, nil
 }
-
+func (ph *productHandler) UpdateProduct(ctx context.Context, request *product.UpdateProductRequest) (*product.UpdateProductResponse, error){
+	validationErrors, err := utils.CheckValidation(request)
+	if err != nil {
+		return nil, err
+	}
+	if len(validationErrors) > 0 {
+		return &product.UpdateProductResponse{
+			Base: utils.ValidationErrorResponse(validationErrors),
+		}, nil
+	}
+	res, err := ph.productService.UpdateProduct(ctx, request)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
 func NewProductHandler(productService service.IProductService) *productHandler {
 	return &productHandler{
 		productService: productService,
