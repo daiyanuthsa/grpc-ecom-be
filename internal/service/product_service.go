@@ -88,7 +88,7 @@ func (ps *productService) DetailProduct(ctx context.Context, request *product.De
 		Name:          productData.Name,
 		Description:   productData.Description,
 		Price:         productData.Price,
-		ImageUrl: 		fmt.Sprintf("https://pub-8b5517dcca4c45d6b1ec071c478e3d39.r2.dev/%s",productData.ImageFileName),
+		ImageUrl: 		fmt.Sprintf("%s/%s",os.Getenv("R2_PUBLIC_DOMAIN"),productData.ImageFileName),
 	}, nil
 
 }
