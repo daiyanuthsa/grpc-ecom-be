@@ -100,6 +100,24 @@ func (ph *productHandler) ListProducts(ctx context.Context, request *product.Lis
 	}
 	return res, nil
 }
+
+func (ph *productHandler) ListProductsAdmin(ctx context.Context, request *product.ListProductsAdminRequest) (*product.ListProductsAdminResponse, error){
+validationErrors, err := utils.CheckValidation(request)
+	if err != nil {
+		return nil, err
+	}
+	if len(validationErrors) > 0 {
+		return &product.ListProductsAdminResponse{
+			Base: utils.ValidationErrorResponse(validationErrors),
+		}, nil
+	}
+	res, err := ph.productService.ListProductsAdmin(ctx, request)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
 func NewProductHandler(productService service.IProductService) *productHandler {
 	return &productHandler{
 		productService: productService,

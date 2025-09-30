@@ -11,6 +11,7 @@ import (
 	common "github.com/daiyanuthsa/grpc-ecom-be/pb/common"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -778,11 +779,11 @@ type ProductAdmin struct {
 	Description   string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
 	Price         float64                `protobuf:"fixed64,4,opt,name=price,proto3" json:"price,omitempty"`
 	ImageUrl      string                 `protobuf:"bytes,5,opt,name=image_url,json=imageUrl,proto3" json:"image_url,omitempty"`
-	CreatedAt     string                 `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	CreatedBy     string                 `protobuf:"bytes,7,opt,name=created_by,json=createdBy,proto3" json:"created_by,omitempty"`
-	UpdatedAt     string                 `protobuf:"bytes,8,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	UpdatedBy     string                 `protobuf:"bytes,9,opt,name=updated_by,json=updatedBy,proto3" json:"updated_by,omitempty"`
-	DeletedAt     string                 `protobuf:"bytes,10,opt,name=deleted_at,json=deletedAt,proto3" json:"deleted_at,omitempty"`
+	DeletedAt     *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=deleted_at,json=deletedAt,proto3" json:"deleted_at,omitempty"`
 	DeletedBy     string                 `protobuf:"bytes,11,opt,name=deleted_by,json=deletedBy,proto3" json:"deleted_by,omitempty"`
 	IsDeleted     bool                   `protobuf:"varint,12,opt,name=is_deleted,json=isDeleted,proto3" json:"is_deleted,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -854,11 +855,11 @@ func (x *ProductAdmin) GetImageUrl() string {
 	return ""
 }
 
-func (x *ProductAdmin) GetCreatedAt() string {
+func (x *ProductAdmin) GetCreatedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.CreatedAt
 	}
-	return ""
+	return nil
 }
 
 func (x *ProductAdmin) GetCreatedBy() string {
@@ -868,11 +869,11 @@ func (x *ProductAdmin) GetCreatedBy() string {
 	return ""
 }
 
-func (x *ProductAdmin) GetUpdatedAt() string {
+func (x *ProductAdmin) GetUpdatedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.UpdatedAt
 	}
-	return ""
+	return nil
 }
 
 func (x *ProductAdmin) GetUpdatedBy() string {
@@ -882,11 +883,11 @@ func (x *ProductAdmin) GetUpdatedBy() string {
 	return ""
 }
 
-func (x *ProductAdmin) GetDeletedAt() string {
+func (x *ProductAdmin) GetDeletedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.DeletedAt
 	}
-	return ""
+	return nil
 }
 
 func (x *ProductAdmin) GetDeletedBy() string {
@@ -907,7 +908,7 @@ var File_product_product_proto protoreflect.FileDescriptor
 
 const file_product_product_proto_rawDesc = "" +
 	"\n" +
-	"\x15product/product.proto\x12\aproduct\x1a\x1acommon/base_response.proto\x1a\x17common/pagination.proto\x1a\x1bbuf/validate/validate.proto\"\xbe\x01\n" +
+	"\x15product/product.proto\x12\aproduct\x1a\x1acommon/base_response.proto\x1a\x17common/pagination.proto\x1a\x1bbuf/validate/validate.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xbe\x01\n" +
 	"\x14CreateProductRequest\x12\x1e\n" +
 	"\x04name\x18\x01 \x01(\tB\n" +
 	"\xbaH\ar\x05\x10\x02\x18\xff\x01R\x04name\x12,\n" +
@@ -971,24 +972,24 @@ const file_product_product_proto_rawDesc = "" +
 	"\n" +
 	"pagination\x18\x02 \x01(\v2\x1a.common.PaginationResponseR\n" +
 	"pagination\x121\n" +
-	"\bproducts\x18\x03 \x03(\v2\x15.product.ProductAdminR\bproducts\"\xe0\x02\n" +
+	"\bproducts\x18\x03 \x03(\v2\x15.product.ProductAdminR\bproducts\"\xb4\x03\n" +
 	"\fProductAdmin\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
 	"\vdescription\x18\x03 \x01(\tR\vdescription\x12\x14\n" +
 	"\x05price\x18\x04 \x01(\x01R\x05price\x12\x1b\n" +
-	"\timage_url\x18\x05 \x01(\tR\bimageUrl\x12\x1d\n" +
+	"\timage_url\x18\x05 \x01(\tR\bimageUrl\x129\n" +
 	"\n" +
-	"created_at\x18\x06 \x01(\tR\tcreatedAt\x12\x1d\n" +
+	"created_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12\x1d\n" +
 	"\n" +
-	"created_by\x18\a \x01(\tR\tcreatedBy\x12\x1d\n" +
+	"created_by\x18\a \x01(\tR\tcreatedBy\x129\n" +
 	"\n" +
-	"updated_at\x18\b \x01(\tR\tupdatedAt\x12\x1d\n" +
+	"updated_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12\x1d\n" +
 	"\n" +
-	"updated_by\x18\t \x01(\tR\tupdatedBy\x12\x1d\n" +
+	"updated_by\x18\t \x01(\tR\tupdatedBy\x129\n" +
 	"\n" +
 	"deleted_at\x18\n" +
-	" \x01(\tR\tdeletedAt\x12\x1d\n" +
+	" \x01(\v2\x1a.google.protobuf.TimestampR\tdeletedAt\x12\x1d\n" +
 	"\n" +
 	"deleted_by\x18\v \x01(\tR\tdeletedBy\x12\x1d\n" +
 	"\n" +
@@ -1032,6 +1033,7 @@ var file_product_product_proto_goTypes = []any{
 	(*common.BaseResponse)(nil),       // 14: common.BaseResponse
 	(*common.PaginationRequest)(nil),  // 15: common.PaginationRequest
 	(*common.PaginationResponse)(nil), // 16: common.PaginationResponse
+	(*timestamppb.Timestamp)(nil),     // 17: google.protobuf.Timestamp
 }
 var file_product_product_proto_depIdxs = []int32{
 	14, // 0: product.CreateProductResponse.base:type_name -> common.BaseResponse
@@ -1046,23 +1048,26 @@ var file_product_product_proto_depIdxs = []int32{
 	14, // 9: product.ListProductsAdminResponse.base:type_name -> common.BaseResponse
 	16, // 10: product.ListProductsAdminResponse.pagination:type_name -> common.PaginationResponse
 	13, // 11: product.ListProductsAdminResponse.products:type_name -> product.ProductAdmin
-	0,  // 12: product.ProductService.CreateProduct:input_type -> product.CreateProductRequest
-	2,  // 13: product.ProductService.DetailProduct:input_type -> product.DetailProductRequest
-	4,  // 14: product.ProductService.UpdateProduct:input_type -> product.UpdateProductRequest
-	6,  // 15: product.ProductService.DeleteProduct:input_type -> product.DeleteProductRequest
-	8,  // 16: product.ProductService.ListProducts:input_type -> product.ListProductsRequest
-	11, // 17: product.ProductService.ListProductsAdmin:input_type -> product.ListProductsAdminRequest
-	1,  // 18: product.ProductService.CreateProduct:output_type -> product.CreateProductResponse
-	3,  // 19: product.ProductService.DetailProduct:output_type -> product.DetailProductResponse
-	5,  // 20: product.ProductService.UpdateProduct:output_type -> product.UpdateProductResponse
-	7,  // 21: product.ProductService.DeleteProduct:output_type -> product.DeleteProductResponse
-	9,  // 22: product.ProductService.ListProducts:output_type -> product.ListProductsResponse
-	12, // 23: product.ProductService.ListProductsAdmin:output_type -> product.ListProductsAdminResponse
-	18, // [18:24] is the sub-list for method output_type
-	12, // [12:18] is the sub-list for method input_type
-	12, // [12:12] is the sub-list for extension type_name
-	12, // [12:12] is the sub-list for extension extendee
-	0,  // [0:12] is the sub-list for field type_name
+	17, // 12: product.ProductAdmin.created_at:type_name -> google.protobuf.Timestamp
+	17, // 13: product.ProductAdmin.updated_at:type_name -> google.protobuf.Timestamp
+	17, // 14: product.ProductAdmin.deleted_at:type_name -> google.protobuf.Timestamp
+	0,  // 15: product.ProductService.CreateProduct:input_type -> product.CreateProductRequest
+	2,  // 16: product.ProductService.DetailProduct:input_type -> product.DetailProductRequest
+	4,  // 17: product.ProductService.UpdateProduct:input_type -> product.UpdateProductRequest
+	6,  // 18: product.ProductService.DeleteProduct:input_type -> product.DeleteProductRequest
+	8,  // 19: product.ProductService.ListProducts:input_type -> product.ListProductsRequest
+	11, // 20: product.ProductService.ListProductsAdmin:input_type -> product.ListProductsAdminRequest
+	1,  // 21: product.ProductService.CreateProduct:output_type -> product.CreateProductResponse
+	3,  // 22: product.ProductService.DetailProduct:output_type -> product.DetailProductResponse
+	5,  // 23: product.ProductService.UpdateProduct:output_type -> product.UpdateProductResponse
+	7,  // 24: product.ProductService.DeleteProduct:output_type -> product.DeleteProductResponse
+	9,  // 25: product.ProductService.ListProducts:output_type -> product.ListProductsResponse
+	12, // 26: product.ProductService.ListProductsAdmin:output_type -> product.ListProductsAdminResponse
+	21, // [21:27] is the sub-list for method output_type
+	15, // [15:21] is the sub-list for method input_type
+	15, // [15:15] is the sub-list for extension type_name
+	15, // [15:15] is the sub-list for extension extendee
+	0,  // [0:15] is the sub-list for field type_name
 }
 
 func init() { file_product_product_proto_init() }

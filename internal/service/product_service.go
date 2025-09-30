@@ -16,6 +16,7 @@ import (
 	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type IProductService interface {
@@ -24,6 +25,7 @@ type IProductService interface {
 	UpdateProduct(ctx context.Context, request *product.UpdateProductRequest) (*product.UpdateProductResponse, error)
 	DeleteProduct(ctx context.Context, request *product.DeleteProductRequest) (*product.DeleteProductResponse, error)
 	ListProducts(ctx context.Context, request *product.ListProductsRequest) (*product.ListProductsResponse, error)
+	ListProductsAdmin(ctx context.Context, request *product.ListProductsAdminRequest) (*product.ListProductsAdminResponse, error)
 }
 
 type productService struct {
@@ -197,6 +199,7 @@ func (ps *productService) DeleteProduct(ctx context.Context, request *product.De
 		Base: utils.SuccessResponse("Product deleted successfully"),
 	}, nil
 }
+
 func (ps *productService) ListProducts(ctx context.Context, request *product.ListProductsRequest) (*product.ListProductsResponse, error){
 	
     const DefaultPage int32 = 1
@@ -246,6 +249,82 @@ func (ps *productService) ListProducts(ctx context.Context, request *product.Lis
 
     // 5. Kembalikan Response Akhir
     return &product.ListProductsResponse{
+        Base: utils.SuccessResponse("Products retrieved successfully"),
+        Pagination: &common.PaginationResponse{
+            Page:          page,
+            Limit:         limit,
+            TotalPages:    totalPages,
+            TotalElements: totalElements,
+        },
+        Products: productsData,
+    }, nil
+}
+
+func (ps *productService) ListProductsAdmin(ctx context.Context, request *product.ListProductsAdminRequest) (*product.ListProductsAdminResponse, error){
+	claims, err := jwtentity.GetClaimsFromContext(ctx)
+	if err != nil {
+		return nil, utils.UnauthenticatedResponse()
+	}	
+
+	if claims.RoleCode != entity.UserRoleAdmin {
+		return nil, status.Errorf(codes.PermissionDenied, "Permission denied")
+	}
+
+	
+    const DefaultPage int32 = 1
+    const DefaultLimit int32 = 10
+    
+    paginationReq := request.GetPagination()
+	page := paginationReq.GetPage()
+	limit := paginationReq.GetLimit()
+	sort := paginationReq.GetSort()
+
+    if page == 0 {
+		page = DefaultPage 
+	}
+	if limit == 0 {
+		limit = DefaultLimit 
+	}
+
+	if len(sort) == 0 {
+		sort = []*common.PaginationSortRequest{
+			{Field: "created_at", Order: "DESC"},
+		}
+	}
+
+    products, totalElements, err := ps.productRepository.ListProductsAdmin(ctx, page, limit, sort)
+    if err != nil {
+        return nil, err
+    }
+    
+    // 3. Hitung Total Pages
+    totalPages := int32(math.Ceil(float64(totalElements) / float64(limit)))
+    if totalElements == 0 {
+        totalPages = 0
+    }
+
+    // 4. Transformasi ke Protobuf Response
+    productsData := make([]*product.ProductAdmin, 0, len(products))
+
+    for _, p := range products {
+        productsData = append(productsData, &product.ProductAdmin{
+            Id:          p.Id,
+            Name:        p.Name,
+            Description: p.Description,
+            Price:       p.Price,
+            ImageUrl:    fmt.Sprintf("%s/%s", os.Getenv("R2_PUBLIC_DOMAIN"), p.ImageFileName),
+			CreatedAt:   timestamppb.New(p.CreatedAt),
+			CreatedBy:   utils.SafeDerefString(p.CreatedBy),
+			UpdatedAt:   timestamppb.New(p.UpdatedAt),
+			UpdatedBy:   utils.SafeDerefString(p.UpdatedBy),
+			DeletedAt:   timestamppb.New(p.DeletedAt),
+			DeletedBy:   utils.SafeDerefString(p.DeletedBy),
+			IsDeleted:   p.IsDeleted,
+        })
+    }
+
+    // 5. Kembalikan Response Akhir
+    return &product.ListProductsAdminResponse{
         Base: utils.SuccessResponse("Products retrieved successfully"),
         Pagination: &common.PaginationResponse{
             Page:          page,

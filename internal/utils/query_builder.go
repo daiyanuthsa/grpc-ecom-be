@@ -33,3 +33,10 @@ func BuildOrderByClause(sorts []*common.PaginationSortRequest, allowedSortFields
 
 	return "ORDER BY " + strings.Join(orderClauses, ", "), nil
 }
+
+func SafeDerefString(s *string) string {
+    if s == nil {
+        return "" // Jika NULL di DB, kembalikan string kosong
+    }
+    return *s // Dereference pointer untuk mendapatkan nilai string
+}
