@@ -43,6 +43,7 @@ func main() {
         "/auth.AuthService/Register", // Easy to add new ones!
 		"/product.ProductService/DetailProduct",
 		"/product.ProductService/ListProducts",
+		"/product.ProductService/HighlightProducts",
     }
 
 	cacheService := gocache.New(time.Hour*24, time.Hour)

@@ -118,6 +118,14 @@ validationErrors, err := utils.CheckValidation(request)
 	return res, nil
 }
 
+func (ph *productHandler) HighlightProducts(ctx context.Context, request *product.HighlightProductsRequest) (*product.HighlightProductsResponse, error){
+	res, err := ph.productService.HighlightProducts(ctx, request)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
 func NewProductHandler(productService service.IProductService) *productHandler {
 	return &productHandler{
 		productService: productService,

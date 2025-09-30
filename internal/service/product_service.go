@@ -26,6 +26,7 @@ type IProductService interface {
 	DeleteProduct(ctx context.Context, request *product.DeleteProductRequest) (*product.DeleteProductResponse, error)
 	ListProducts(ctx context.Context, request *product.ListProductsRequest) (*product.ListProductsResponse, error)
 	ListProductsAdmin(ctx context.Context, request *product.ListProductsAdminRequest) (*product.ListProductsAdminResponse, error)
+	HighlightProducts(ctx context.Context, request *product.HighlightProductsRequest) (*product.HighlightProductsResponse, error)
 }
 
 type productService struct {
@@ -332,6 +333,29 @@ func (ps *productService) ListProductsAdmin(ctx context.Context, request *produc
             TotalPages:    totalPages,
             TotalElements: totalElements,
         },
+        Products: productsData,
+    }, nil
+}
+func (ps *productService) HighlightProducts(ctx context.Context, request *product.HighlightProductsRequest) (*product.HighlightProductsResponse, error){
+	
+	products,  err := ps.productRepository.HighlightProducts(ctx)
+    if err != nil {
+        return nil, err
+    }
+
+	productsData := make([]*product.Product, 0, len(products))
+
+    for _, p := range products {
+        productsData = append(productsData, &product.Product{
+            Id:          p.Id,
+            Name:        p.Name,
+            Description: p.Description,
+            Price:       p.Price,
+            ImageUrl:    fmt.Sprintf("%s/%s", os.Getenv("R2_PUBLIC_DOMAIN"), p.ImageFileName),
+        })
+    }
+	return &product.HighlightProductsResponse{
+        Base: utils.SuccessResponse("Products retrieved successfully"),
         Products: productsData,
     }, nil
 }

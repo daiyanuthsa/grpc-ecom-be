@@ -19,6 +19,7 @@ type IProductRepository interface {
 	DeleteProduct(ctx context.Context, DeletedAt time.Time, DeletedBy string, productId string) error
 	ListProducts(ctx context.Context, page int32, limit int32, sort []*common.PaginationSortRequest) ([]*entity.Product, int32, error)
 	ListProductsAdmin(ctx context.Context, page int32, limit int32, sort []*common.PaginationSortRequest) ([]*entity.Product, int32, error)
+	HighlightProducts(ctx context.Context) ([]*entity.Product, error)
 }
 
 
@@ -196,6 +197,57 @@ func (r *productRepository) ListProductsAdmin(ctx context.Context, page int32, l
 
 	// 6. Kembalikan data dan total elemen
 	return products, totalElements, nil
+}
+
+func (r *productRepository) HighlightProducts(ctx context.Context) ([]*entity.Product, error){
+	// TODO: [Business Logic Enhancement] Ganti logika di bawah ini
+    // dengan query yang menghitung total penjualan atau ranking produk
+    // setelah fitur transaction diimplementasikan.
+    
+    // Placeholder Logic: Ambil 3 produk terbaru berdasarkan created_at
+    // Ini berfungsi sebagai produk 'Highlight' sementara.
+
+	query := `
+        SELECT id, name, description, price, image_file_name
+        FROM "product" 
+        WHERE is_deleted = FALSE
+        ORDER BY created_at DESC 
+        LIMIT 3
+    `
+    
+    rows, err := r.db.QueryContext(ctx, query)
+    if err != nil {
+        log.Printf("Error querying highlight products: %v", err)
+        return nil, fmt.Errorf("failed to fetch highlight products: %w", err)
+    }
+    defer rows.Close()
+
+    var products []*entity.Product
+    for rows.Next() {
+        var p entity.Product
+        
+        // Asumsikan urutan kolom sesuai dengan SELECT statement
+        err := rows.Scan(
+            &p.Id, 
+            &p.Name, 
+            &p.Description, 
+            &p.Price, 
+            &p.ImageFileName,
+        )
+        
+        if err != nil {
+            log.Printf("Error scanning highlight product row: %v", err)
+            return nil, fmt.Errorf("failed to scan highlight product: %w", err)
+        }
+        
+        products = append(products, &p)
+    }
+    
+    if err = rows.Err(); err != nil {
+        return nil, fmt.Errorf("error during highlight products iteration: %w", err)
+    }
+
+    return products, nil
 }
 
 func NewProductRepository(db *sql.DB) IProductRepository {
