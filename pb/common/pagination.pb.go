@@ -22,17 +22,70 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type PaginationRequest struct {
+type PaginationSortRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Page          int32                  `protobuf:"varint,1,opt,name=page,proto3" json:"page,omitempty"`
-	Limit         int32                  `protobuf:"varint,2,opt,name=limit,proto3" json:"limit,omitempty"`
+	Field         string                 `protobuf:"bytes,1,opt,name=field,proto3" json:"field,omitempty"`
+	Order         string                 `protobuf:"bytes,2,opt,name=order,proto3" json:"order,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PaginationSortRequest) Reset() {
+	*x = PaginationSortRequest{}
+	mi := &file_common_pagination_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PaginationSortRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PaginationSortRequest) ProtoMessage() {}
+
+func (x *PaginationSortRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_common_pagination_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PaginationSortRequest.ProtoReflect.Descriptor instead.
+func (*PaginationSortRequest) Descriptor() ([]byte, []int) {
+	return file_common_pagination_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *PaginationSortRequest) GetField() string {
+	if x != nil {
+		return x.Field
+	}
+	return ""
+}
+
+func (x *PaginationSortRequest) GetOrder() string {
+	if x != nil {
+		return x.Order
+	}
+	return ""
+}
+
+type PaginationRequest struct {
+	state         protoimpl.MessageState   `protogen:"open.v1"`
+	Page          int32                    `protobuf:"varint,1,opt,name=page,proto3" json:"page,omitempty"`
+	Limit         int32                    `protobuf:"varint,2,opt,name=limit,proto3" json:"limit,omitempty"`
+	Sort          []*PaginationSortRequest `protobuf:"bytes,3,rep,name=sort,proto3" json:"sort,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *PaginationRequest) Reset() {
 	*x = PaginationRequest{}
-	mi := &file_common_pagination_proto_msgTypes[0]
+	mi := &file_common_pagination_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -44,7 +97,7 @@ func (x *PaginationRequest) String() string {
 func (*PaginationRequest) ProtoMessage() {}
 
 func (x *PaginationRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_common_pagination_proto_msgTypes[0]
+	mi := &file_common_pagination_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -57,7 +110,7 @@ func (x *PaginationRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PaginationRequest.ProtoReflect.Descriptor instead.
 func (*PaginationRequest) Descriptor() ([]byte, []int) {
-	return file_common_pagination_proto_rawDescGZIP(), []int{0}
+	return file_common_pagination_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *PaginationRequest) GetPage() int32 {
@@ -74,6 +127,13 @@ func (x *PaginationRequest) GetLimit() int32 {
 	return 0
 }
 
+func (x *PaginationRequest) GetSort() []*PaginationSortRequest {
+	if x != nil {
+		return x.Sort
+	}
+	return nil
+}
+
 type PaginationResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Page          int32                  `protobuf:"varint,1,opt,name=page,proto3" json:"page,omitempty"`
@@ -86,7 +146,7 @@ type PaginationResponse struct {
 
 func (x *PaginationResponse) Reset() {
 	*x = PaginationResponse{}
-	mi := &file_common_pagination_proto_msgTypes[1]
+	mi := &file_common_pagination_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -98,7 +158,7 @@ func (x *PaginationResponse) String() string {
 func (*PaginationResponse) ProtoMessage() {}
 
 func (x *PaginationResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_common_pagination_proto_msgTypes[1]
+	mi := &file_common_pagination_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -111,7 +171,7 @@ func (x *PaginationResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PaginationResponse.ProtoReflect.Descriptor instead.
 func (*PaginationResponse) Descriptor() ([]byte, []int) {
-	return file_common_pagination_proto_rawDescGZIP(), []int{1}
+	return file_common_pagination_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *PaginationResponse) GetPage() int32 {
@@ -146,10 +206,14 @@ var File_common_pagination_proto protoreflect.FileDescriptor
 
 const file_common_pagination_proto_rawDesc = "" +
 	"\n" +
-	"\x17common/pagination.proto\x12\x06common\x1a\x1bbuf/validate/validate.proto\"Q\n" +
+	"\x17common/pagination.proto\x12\x06common\x1a\x1bbuf/validate/validate.proto\"C\n" +
+	"\x15PaginationSortRequest\x12\x14\n" +
+	"\x05field\x18\x01 \x01(\tR\x05field\x12\x14\n" +
+	"\x05order\x18\x02 \x01(\tR\x05order\"\x84\x01\n" +
 	"\x11PaginationRequest\x12\x1b\n" +
 	"\x04page\x18\x01 \x01(\x05B\a\xbaH\x04\x1a\x02 \x00R\x04page\x12\x1f\n" +
-	"\x05limit\x18\x02 \x01(\x05B\t\xbaH\x06\x1a\x04\x18d \x00R\x05limit\"\x86\x01\n" +
+	"\x05limit\x18\x02 \x01(\x05B\t\xbaH\x06\x1a\x04\x18d \x00R\x05limit\x121\n" +
+	"\x04sort\x18\x03 \x03(\v2\x1d.common.PaginationSortRequestR\x04sort\"\x86\x01\n" +
 	"\x12PaginationResponse\x12\x12\n" +
 	"\x04page\x18\x01 \x01(\x05R\x04page\x12\x14\n" +
 	"\x05limit\x18\x02 \x01(\x05R\x05limit\x12\x1f\n" +
@@ -169,17 +233,19 @@ func file_common_pagination_proto_rawDescGZIP() []byte {
 	return file_common_pagination_proto_rawDescData
 }
 
-var file_common_pagination_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_common_pagination_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_common_pagination_proto_goTypes = []any{
-	(*PaginationRequest)(nil),  // 0: common.PaginationRequest
-	(*PaginationResponse)(nil), // 1: common.PaginationResponse
+	(*PaginationSortRequest)(nil), // 0: common.PaginationSortRequest
+	(*PaginationRequest)(nil),     // 1: common.PaginationRequest
+	(*PaginationResponse)(nil),    // 2: common.PaginationResponse
 }
 var file_common_pagination_proto_depIdxs = []int32{
-	0, // [0:0] is the sub-list for method output_type
-	0, // [0:0] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	0, // 0: common.PaginationRequest.sort:type_name -> common.PaginationSortRequest
+	1, // [1:1] is the sub-list for method output_type
+	1, // [1:1] is the sub-list for method input_type
+	1, // [1:1] is the sub-list for extension type_name
+	1, // [1:1] is the sub-list for extension extendee
+	0, // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_common_pagination_proto_init() }
@@ -193,7 +259,7 @@ func file_common_pagination_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_common_pagination_proto_rawDesc), len(file_common_pagination_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

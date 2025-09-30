@@ -198,14 +198,15 @@ func (ps *productService) DeleteProduct(ctx context.Context, request *product.De
 	}, nil
 }
 func (ps *productService) ListProducts(ctx context.Context, request *product.ListProductsRequest) (*product.ListProductsResponse, error){
-	//  Nilai Default Pagination
+	
     const DefaultPage int32 = 1
     const DefaultLimit int32 = 10
     
-    // Ambil parameter dari request, gunakan default jika kosong/nol
-    page := request.GetPagination().GetPage()
-	limit := request.GetPagination().GetLimit()
-    
+    paginationReq := request.GetPagination()
+	page := paginationReq.GetPage()
+	limit := paginationReq.GetLimit()
+	sort := paginationReq.GetSort()
+
     if page == 0 {
 		page = DefaultPage 
 	}
@@ -213,7 +214,13 @@ func (ps *productService) ListProducts(ctx context.Context, request *product.Lis
 		limit = DefaultLimit 
 	}
 
-    products, totalElements, err := ps.productRepository.ListProducts(ctx, page, limit)
+	if len(sort) == 0 {
+		sort = []*common.PaginationSortRequest{
+			{Field: "created_at", Order: "DESC"},
+		}
+	}
+
+    products, totalElements, err := ps.productRepository.ListProducts(ctx, page, limit, sort)
     if err != nil {
         return nil, err
     }

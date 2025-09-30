@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/daiyanuthsa/grpc-ecom-be/internal/entity"
+	"github.com/daiyanuthsa/grpc-ecom-be/internal/utils"
+	"github.com/daiyanuthsa/grpc-ecom-be/pb/common"
 )
 
 type IProductRepository interface {
@@ -15,8 +17,9 @@ type IProductRepository interface {
 	GetProductById(ctx context.Context, id string) (*entity.Product, error)
 	UpdateProduct(ctx context.Context, product *entity.Product) error
 	DeleteProduct(ctx context.Context, DeletedAt time.Time, DeletedBy string, productId string) error
-	ListProducts(ctx context.Context, page int32, limit int32) ([]*entity.Product, int32, error)
+	ListProducts(ctx context.Context, page int32, limit int32, sort []*common.PaginationSortRequest) ([]*entity.Product, int32, error)
 }
+
 
 type productRepository struct {
 	db *sql.DB
@@ -61,35 +64,46 @@ func (r *productRepository) DeleteProduct(ctx context.Context, DeletedAt time.Ti
 	return nil
 }
 
-func (r *productRepository) ListProducts(ctx context.Context, page int32, limit int32) ([]*entity.Product, int32, error) {
+func (r *productRepository) ListProducts(ctx context.Context, page int32, limit int32, sort []*common.PaginationSortRequest) ([]*entity.Product, int32, error) {
 	// 1. Hitung OFFSET
-	// OFFSET = (Halaman - 1) * Batas
 	offset := (page - 1) * limit
-    
-	// 2. Query untuk Menghitung Total Elemen (Total Count)
+
+	// 2. Query untuk Menghitung Total Elemen
 	var totalElements int32
-    // Gunakan COUNT(*) pada tabel produk yang tidak dihapus
 	countQuery := `SELECT COUNT(id) FROM "product" WHERE is_deleted = FALSE`
-    
 	if err := r.db.QueryRowContext(ctx, countQuery).Scan(&totalElements); err != nil {
 		log.Printf("Error counting products: %v", err)
 		return nil, 0, fmt.Errorf("failed to get total product count: %w", err)
 	}
 
-	// Jika tidak ada elemen, langsung kembalikan slice kosong dan total 0
 	if totalElements == 0 {
 		return nil, 0, nil
 	}
-    
-	// 3. Query untuk Mengambil Data Produk dengan LIMIT dan OFFSET
-	dataQuery := `
+
+	// 3. Bangun klausa ORDER BY secara dinamis dan aman menggunakan utilitas
+	allowedSortFields := map[string]bool{
+		"id":         true,
+		"name":       true,
+		"price":      true,
+		"created_at": true,
+		"updated_at": true,
+	}
+	orderByClause, err := utils.BuildOrderByClause(sort, allowedSortFields, "ORDER BY created_at DESC")
+	if err != nil {
+		// Jika ada field yang tidak valid, kembalikan error. 
+		// Service layer bisa menangani ini sebagai Bad Request.
+		return nil, 0, fmt.Errorf("invalid sort parameter: %w", err)
+	}
+
+	// 4. Query untuk Mengambil Data Produk dengan LIMIT, OFFSET, dan ORDER BY dinamis
+	dataQuery := fmt.Sprintf(`
 		SELECT id, name, description, price, image_file_name
 		FROM "product" 
 		WHERE is_deleted = FALSE
-		ORDER BY created_at DESC 
+		%s 
 		LIMIT $1 OFFSET $2
-	`
-    
+	`, orderByClause)
+
 	rows, err := r.db.QueryContext(ctx, dataQuery, limit, offset)
 	if err != nil {
 		log.Printf("Error querying products with pagination: %v", err)
@@ -97,31 +111,22 @@ func (r *productRepository) ListProducts(ctx context.Context, page int32, limit 
 	}
 	defer rows.Close()
 
-	// 4. Scan Hasil Query
+	// 5. Scan Hasil Query
 	var products []*entity.Product
 	for rows.Next() {
 		var p entity.Product
-        
-        // Penting: Pastikan kolom yang di-SELECT sesuai dengan urutan SCAN
-		if err := rows.Scan(
-			&p.Id, 
-			&p.Name, 
-			&p.Description, 
-			&p.Price, 
-			&p.ImageFileName,
-		); err != nil {
+		if err := rows.Scan(&p.Id, &p.Name, &p.Description, &p.Price, &p.ImageFileName); err != nil {
 			log.Printf("Error scanning product row: %v", err)
 			return nil, 0, fmt.Errorf("failed to scan product: %w", err)
 		}
-        
 		products = append(products, &p)
 	}
-    
+
 	if err = rows.Err(); err != nil {
 		return nil, 0, fmt.Errorf("error during iteration: %w", err)
 	}
 
-	// 5. Kembalikan data dan total elemen
+	// 6. Kembalikan data dan total elemen
 	return products, totalElements, nil
 }
 
