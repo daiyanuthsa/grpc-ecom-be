@@ -5,6 +5,7 @@ import (
 
 	"github.com/daiyanuthsa/grpc-ecom-be/internal/handler"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/joho/godotenv"
 )
 
@@ -18,6 +19,16 @@ func main() {
 	app := fiber.New(fiber.Config{
 		BodyLimit: 10 * 1024 * 1024,
 	})
+	app.Use(cors.New(cors.Config{
+        // Izinkan origin frontend Anda
+        AllowOrigins: "http://localhost:5173", 
+        
+        // Izinkan method yang diperlukan (GET, POST, OPTIONS, dll.)
+        AllowMethods: "GET,POST,OPTIONS", 
+        
+        // Penting: Izinkan Authorization header karena Anda menggunakan JWT/Bearer token
+        AllowHeaders: "Origin, Content-Type, Accept, Authorization", 
+    }))
 
 	app.Get("/ping", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{

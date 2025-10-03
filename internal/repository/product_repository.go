@@ -157,6 +157,7 @@ func (r *productRepository) ListProductsAdmin(ctx context.Context, page int32, l
 		"created_by": true,
 		"updated_by": true,
 		"deleted_by": true,
+		"is_deleted": true,
 	}
 	orderByClause, err := utils.BuildOrderByClause(sort, allowedSortFields, "ORDER BY created_at DESC")
 	if err != nil {
