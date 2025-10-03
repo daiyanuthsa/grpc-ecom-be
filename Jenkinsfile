@@ -1,7 +1,7 @@
 pipeline {
     agent any
     environment {
-        DOCKER_REGISTRY_USER = 'your-dockerhub-username'
+        DOCKER_REGISTRY_USER = 'daiyanuthsa'
         DOCKER_REGISTRY_CREDENTIALS_ID = 'dockerhub-credentials'
         DEPLOY_SERVER_CREDENTIALS_ID = 'deploy-server-credentials' // ID untuk kredensial SSH password
         DEPLOY_SERVER_IP = '192.168.100.3'
