@@ -1,49 +1,64 @@
 pipeline {
-    agent any
-    environment {
-        DOCKER_REGISTRY_USER = 'daiyanuthsa'
-        DOCKER_REGISTRY_CREDENTIALS_ID = 'dockerhub-credentials'
-        DEPLOY_SERVER_CREDENTIALS_ID = 'deploy-server-credentials' // ID untuk kredensial SSH password
-        DEPLOY_SERVER_IP = '192.168.100.3'
-        DEPLOY_SERVER_USER = 'root'
-    }
+    // Tidak ada agent global, kita tentukan per-stage
+    agent none
 
     stages {
-        stage('Build gRPC Image') {
-            steps {
-                script {
-                    def imageName = "${DOCKER_REGISTRY_USER}/grpc-backend:latest"
-                    withCredentials([usernamePassword(credentialsId: DOCKER_REGISTRY_CREDENTIALS_ID, usernameVariable: 'USER', passwordVariable: 'PASS')]) {
-                        sh "echo ${PASS} | docker login -u ${USER} --password-stdin"
+        // TAHAP INI DIJALANKAN DI VM TENCENT
+        stage('Build & Push Images on Remote Agent') {
+            agent { label 'tencent-vm' } // Pastikan label ini sesuai
+
+            stages {
+                stage('Login to Docker') {
+                    steps {
+                        withCredentials([
+                            usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')
+                        ]) {
+                            sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
+                        }
                     }
-                    sh "docker build -t ${imageName} -f grpc.Dockerfile ."
-                    sh "docker push ${imageName}"
+                }
+                stage('Build and Push gRPC Image') {
+                    steps {
+                        withCredentials([string(credentialsId: 'dockerhub-username', variable: 'DOCKER_REGISTRY_USER')]) {
+                            script {
+                                def imageName = "${DOCKER_REGISTRY_USER}/grpc-backend:latest"
+                                // Gunakan buildx untuk target arm64
+                                sh "docker buildx build --platform linux/arm64 -t ${imageName} -f grpc.Dockerfile --push ."
+                            }
+                        }
+                    }
+                }
+                stage('Build and Push REST Image') {
+                    steps {
+                        withCredentials([string(credentialsId: 'dockerhub-username', variable: 'DOCKER_REGISTRY_USER')]) {
+                            script {
+                                def imageName = "${DOCKER_REGISTRY_USER}/rest-uploader:latest"
+                                // Gunakan buildx untuk target arm64
+                                sh "docker buildx build --platform linux/arm64 -t ${imageName} -f rest.Dockerfile --push ."
+                            }
+                        }
+                    }
+                }
+            }
+
+            post {
+                always {
+                    sh 'docker logout'
                 }
             }
         }
-        
-        // Stage ini akan berjalan kedua, setelah gRPC selesai
-        stage('Build REST Image') {
+
+        // TAHAP INI DIJALANKAN DI JENKINS MASTER (STB ANDA)
+        stage('Deploy Services on Local Server') {
+            agent { label 'built-in' } // Menggunakan label yang benar untuk Master
             steps {
-                script {
-                    def imageName = "${DOCKER_REGISTRY_USER}/rest-uploader:latest"
-                    // Tidak perlu login lagi jika sudah di stage sebelumnya
-                    sh "docker build -t ${imageName} -f rest.Dockerfile ."
-                    sh "docker push ${imageName}"
+                withCredentials([
+                    usernamePassword(credentialsId: 'deploy-server-credentials', usernameVariable: 'SSH_USER', passwordVariable: 'SSH_PASS'),
+                    string(credentialsId: 'deploy-server-ip', variable: 'DEPLOY_SERVER_IP')
+                ]) {
+                    sh 'sshpass -p $SSH_PASS ssh -o StrictHostKeyChecking=no $SSH_USER@$DEPLOY_SERVER_IP \'cd /home/root/grpc-ecom && docker compose pull backend rest-uploader && docker compose up -d --no-deps backend rest-uploader && docker system prune -af\''
                 }
             }
-        }
-        stage('Deploy Backend Services') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: DEPLOY_SERVER_CREDENTIALS_ID, usernameVariable: 'SSH_USER', passwordVariable: 'SSH_PASS')]) {
-                    sh "sshpass -p '${SSH_PASS}' ssh -o StrictHostKeyChecking=no ${SSH_USER}@${DEPLOY_SERVER_IP} 'cd /home/root/my-app && docker-compose pull backend rest-uploader && docker-compose up -d --no-deps backend rest-uploader && docker system prune -af'"
-                }
-            }
-        }
-    }
-    post {
-        always {
-            sh "docker logout"
         }
     }
 }
