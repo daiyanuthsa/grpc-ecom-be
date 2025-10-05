@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"log"
 
 	"github.com/daiyanuthsa/grpc-ecom-be/internal/handler"
@@ -21,7 +22,7 @@ func main() {
 	})
 	app.Use(cors.New(cors.Config{
         // Izinkan origin frontend Anda
-        AllowOrigins: "http://localhost:5173", 
+        AllowOrigins: os.Getenv("FRONTEND_URL"), 
         
         // Izinkan method yang diperlukan (GET, POST, OPTIONS, dll.)
         AllowMethods: "GET,POST,OPTIONS", 
