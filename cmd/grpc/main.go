@@ -11,6 +11,7 @@ import (
 	"github.com/daiyanuthsa/grpc-ecom-be/internal/repository"
 	"github.com/daiyanuthsa/grpc-ecom-be/internal/service"
 	"github.com/daiyanuthsa/grpc-ecom-be/pb/auth"
+	"github.com/daiyanuthsa/grpc-ecom-be/pb/cart"
 	"github.com/daiyanuthsa/grpc-ecom-be/pb/product"
 	gocache "github.com/patrickmn/go-cache"
 
@@ -37,23 +38,33 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to connect to database: %v", err)
 	}
+
 	// Define all public (unauthenticated) endpoints in a single, clean slice.
-    publicEndpoints := []string{
-        "/auth.AuthService/Login",
-        "/auth.AuthService/Register", // Easy to add new ones!
+	publicEndpoints := []string{
+		"/auth.AuthService/Login",
+		"/auth.AuthService/Register", // Easy to add new ones!
 		"/product.ProductService/DetailProduct",
 		"/product.ProductService/ListProducts",
 		"/product.ProductService/HighlightProducts",
-    }
+	}
 
 	cacheService := gocache.New(time.Hour*24, time.Hour)
 	authMiddleware := middleware.NewAuthMiddleware(cacheService, publicEndpoints)
-	authService := service.NewAuthService(repository.NewAuthRepository(db), cacheService)
-	authHandler := handler.NewAuthHandler(authService)
 
-	productService := service.NewProductService(repository.NewProductRepository(db), service.NewStorageService(ctx))
+	// Repositories
+	authRepo := repository.NewAuthRepository(db)
+	productRepo := repository.NewProductRepository(db)
+	cartRepo := repository.NewCartRepository(db) // Use SQL DB for Cart
+
+	// Services
+	authService := service.NewAuthService(authRepo, cacheService)
+	productService := service.NewProductService(productRepo, service.NewStorageService(ctx))
+	cartService := service.NewCartService(cartRepo, productRepo)
+
+	// Handlers
+	authHandler := handler.NewAuthHandler(authService)
 	productHandler := handler.NewProductHandler(productService)
-	
+	cartHandler := handler.NewCartHandler(cartService)
 
 	serv := grpc.NewServer(
 		grpc.ChainUnaryInterceptor(
@@ -63,6 +74,7 @@ func main() {
 
 	auth.RegisterAuthServiceServer(serv, authHandler)
 	product.RegisterProductServiceServer(serv, productHandler)
+	cart.RegisterCartServiceServer(serv, cartHandler)
 
 	if os.Getenv("ENVIRONMENT") == "dev" {
 		reflection.Register(serv)

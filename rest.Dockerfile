@@ -10,7 +10,8 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o /rest-server ./cmd/rest
 
 # ---- Tahap 2: Final ----
-FROM scratch
+FROM debian:bullseye-slim
+RUN apt-get update && apt-get install -y ca-certificates
 COPY --from=builder /rest-server /rest-server
 
 # Port yang diekspos oleh aplikasi REST
