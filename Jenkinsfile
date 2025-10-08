@@ -68,15 +68,14 @@ pipeline {
             }
             post {
                 always {
-                    stage('Destroy Terraform Infrastructure') {
                         steps {
+                            echo 'Tearing down the infrastructure...'
                             dir(TERRAFORM_DIR) {
                                 withCredentials([file(credentialsId: 'gcp-service-account-key', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
                                     sh 'terraform destroy -auto-approve -var="gcp_project_id=nama-proyek-gcp-anda"'
                                 }
                             }
                         }
-                    }
                 }
             }
         }
