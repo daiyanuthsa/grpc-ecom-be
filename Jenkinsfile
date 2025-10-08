@@ -1,37 +1,19 @@
 pipeline {
-    agent none
+    agent { label 'built-in' } // Jalankan semua orkestrasi di master
+
+    // Opsi untuk menangani submodule secara otomatis saat checkout awal
+    options {
+        // Ini akan menjalankan 'git submodule update --init --recursive'
+        submodule(recursive: true)
+    }
+
+    environment {
+        TERRAFORM_DIR = 'terraform/gcp_builder'
+    }
 
     stages {
-
-        
         stage('Provision and Build on GCP') {
-            agent { label 'built-in' }
-
-            environment {
-                TERRAFORM_DIR = 'terraform/gcp_builder'
-            }
-            options {
-                // shallow clone untuk menghemat ruang di Jenkins Master
-                skipDefaultCheckout true 
-            }
-
             stages {
-                stage('Checkout Terraform Scripts'){
-                    steps{
-                        cleanWs()
-
-                        // Lakukan checkout eksplisit yang ringan di sini
-                        checkout([
-                            $class: 'GitSCM',
-                            branches: [[name: '*/main']],
-                            userRemoteConfigs: [[url: 'https://github.com/daiyanuthsa/grpc-ecom-be.git']],
-                            extensions: [
-                                [$class: 'CloneOption', shallow: true, noTags: true, depth: 1],
-                                [$class: 'SubmoduleOption', disable: true]
-                            ]
-                        ])
-                    }
-                }
                 stage('Initialize Terraform') {
                     steps {
                         dir(TERRAFORM_DIR) {
@@ -44,7 +26,7 @@ pipeline {
                     steps {
                         dir(TERRAFORM_DIR) {
                             withCredentials([file(credentialsId: 'gcp-service-account-key', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
-                                sh 'terraform apply -auto-approve -var="gcp_project_id=myexperiment-project"'
+                                sh 'terraform apply -auto-approve -var="gcp_project_id=nama-proyek-gcp-anda"'
                             }
                         }
                     }
@@ -63,20 +45,17 @@ pipeline {
                                 sshUserPrivateKey(credentialsId: 'gcp-ssh-key', keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER')
                             ]) {
                                 sh "sleep 30"
-
-                                // Perintah build di dalam VM sekarang lebih sederhana
                                 sh """
                                     ssh -o StrictHostKeyChecking=no -i \$SSH_KEY \$SSH_USER@${vmIp} '''
                                         echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin
                                         
-                                        git clone https://github.com/daiyanuthsa/grpc-ecom-be.git
+                                        # Clone ulang di VM untuk memastikan kebersihan lingkungan build
+                                        git clone --recurse-submodules https://github.com/daiyanuthsa/grpc-ecom-be.git
                                         cd grpc-ecom-be
 
-                                        # Build & Push gRPC Image (tanpa buildx)
                                         docker build -t ${DOCKER_REGISTRY_USER}/grpc-backend:latest -f grpc.Dockerfile .
                                         docker push ${DOCKER_REGISTRY_USER}/grpc-backend:latest
                                         
-                                        # Build & Push REST Image (tanpa buildx)
                                         docker build -t ${DOCKER_REGISTRY_USER}/rest-uploader:latest -f rest.Dockerfile .
                                         docker push ${DOCKER_REGISTRY_USER}/rest-uploader:latest
 
@@ -90,20 +69,19 @@ pipeline {
             }
             post {
                 always {
-                        steps {
-                            echo 'Tearing down the infrastructure...'
-                            dir(TERRAFORM_DIR) {
-                                withCredentials([file(credentialsId: 'gcp-service-account-key', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
-                                    sh 'terraform destroy -auto-approve -var="gcp_project_id=nama-proyek-gcp-anda"'
-                                }
+                    steps {
+                        echo 'Tearing down the infrastructure...'
+                        dir(TERRAFORM_DIR) {
+                            withCredentials([file(credentialsId: 'gcp-service-account-key', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
+                                sh 'terraform destroy -auto-approve -var="gcp_project_id=nama-proyek-gcp-anda"'
                             }
                         }
+                    }
                 }
             }
         }
 
         stage('Deploy Services on Local Server') {
-            agent { label 'built-in' }
             steps {
                 withCredentials([
                     usernamePassword(credentialsId: 'deploy-server-credentials', usernameVariable: 'SSH_USER', passwordVariable: 'SSH_PASS'),
@@ -114,9 +92,10 @@ pipeline {
             }
         }
     }
+    
     post {
         always {
-            // Selalu bersihkan workspace di akhir untuk menjaga kebersihan
+            // Selalu bersihkan workspace di akhir
             cleanWs()
         }
     }
