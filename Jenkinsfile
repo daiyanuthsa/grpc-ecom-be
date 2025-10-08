@@ -71,7 +71,7 @@ pipeline {
                         // 🔹 Step 1: Docker Login
                         stage('Remote: Docker Login') {
                             sh """
-                                ssh -o StrictHostKeyChecking=no -i \$SSH_KEY \$SSH_USER@${vmIp} <<'EOF'
+                                ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i \$SSH_KEY \$SSH_USER@${vmIp} <<'EOF'
                                 set -e
                                 echo "\$DOCKER_PASS" | docker login -u "\$DOCKER_USER" --password-stdin
                                 docker info | grep Username || true
@@ -81,7 +81,7 @@ pipeline {
                         // 🔹 Step 2: Clone repository
                         stage('Remote: Git Clone') {
                             sh """
-                                ssh -o StrictHostKeyChecking=no -i \$SSH_KEY \$SSH_USER@${vmIp} <<'EOF'
+                                ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i \$SSH_KEY \$SSH_USER@${vmIp} <<'EOF'
                                 set -e
                                 if [ ! -d grpc-ecom-be ]; then
                                     git clone --recurse-submodules https://github.com/daiyanuthsa/grpc-ecom-be.git
@@ -96,7 +96,7 @@ pipeline {
                         // 🔹 Step 3: Build gRPC backend
                         stage('Remote: Build gRPC Backend') {
                             sh """
-                                ssh -o StrictHostKeyChecking=no -i \$SSH_KEY \$SSH_USER@${vmIp} <<'EOF'
+                                ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i \$SSH_KEY \$SSH_USER@${vmIp} <<'EOF'
                                 set -e
                                 cd grpc-ecom-be
                                 docker build -t "\$DOCKER_USER/grpc-backend:latest" -f grpc.Dockerfile .
@@ -107,7 +107,7 @@ pipeline {
                         // 🔹 Step 4: Push gRPC backend
                         stage('Remote: Push gRPC Backend') {
                             sh """
-                                ssh -o StrictHostKeyChecking=no -i \$SSH_KEY \$SSH_USER@${vmIp} <<'EOF'
+                                ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i \$SSH_KEY \$SSH_USER@${vmIp} <<'EOF'
                                 set -e
                                 docker push "\$DOCKER_USER/grpc-backend:latest"
                                 EOF
@@ -117,7 +117,7 @@ pipeline {
                         // 🔹 Step 5: Build REST uploader
                         stage('Remote: Build REST Uploader') {
                             sh """
-                                ssh -o StrictHostKeyChecking=no -i \$SSH_KEY \$SSH_USER@${vmIp} <<'EOF'
+                                ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i \$SSH_KEY \$SSH_USER@${vmIp} <<'EOF'
                                 set -e
                                 cd grpc-ecom-be
                                 docker build -t "\$DOCKER_USER/rest-uploader:latest" -f rest.Dockerfile .
@@ -128,7 +128,7 @@ pipeline {
                         // 🔹 Step 6: Push REST uploader
                         stage('Remote: Push REST Uploader') {
                             sh """
-                                ssh -o StrictHostKeyChecking=no -i \$SSH_KEY \$SSH_USER@${vmIp} <<'EOF'
+                                ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i \$SSH_KEY \$SSH_USER@${vmIp} <<'EOF'
                                 set -e
                                 docker push "\$DOCKER_USER/rest-uploader:latest"
                                 docker logout
