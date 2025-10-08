@@ -12,11 +12,6 @@ pipeline {
     }
 
     stages {
-        stage('Clean Workspace') {
-            steps {
-                cleanWs()
-            }
-        }
 
         stage('Checkout Source') {
             steps {
@@ -186,6 +181,9 @@ pipeline {
         }
         failure {
             echo '❌ Build failed. Infrastructure already cleaned up.'
+        }
+        always {
+            cleanWs()
         }
     }
 }
