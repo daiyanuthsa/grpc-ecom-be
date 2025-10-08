@@ -8,6 +8,7 @@ pipeline {
 
     environment {
         TERRAFORM_DIR = 'terraform/gcp_builder'
+        GCP_PROJECT_ID = 'myexperiment-project' 
     }
 
     stages {
@@ -29,56 +30,46 @@ pipeline {
         }
 
         stage('Provision and Build on GCP') {
-            stages {
-                stage('Initialize Terraform') {
-                    steps {
-                        dir(TERRAFORM_DIR) {
-                            sh 'terraform init'
-                        }
+             steps {
+                withCredentials([file(credentialsId: 'gcp-service-account-key', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
+                    // Initialize Terraform
+                    dir(TERRAFORM_DIR) {
+                        sh 'terraform init'
                     }
-                }
 
-                stage('Apply Terraform to Create VM') {
-                    steps {
-                        dir(TERRAFORM_DIR) {
-                            withCredentials([file(credentialsId: 'gcp-service-account-key', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
-                                sh 'terraform apply -auto-approve -var="gcp_project_id=myexperiment-project"'
-                            }
-                        }
+                    // Apply Terraform
+                    dir(TERRAFORM_DIR) {
+                        sh "terraform apply -auto-approve -var=\"gcp_project_id=${GCP_PROJECT_ID}\""
                     }
-                }
 
-                stage('Build Images on Dynamic VM') {
-                    steps {
-                        script {
-                            def vmIp = dir(TERRAFORM_DIR) {
-                                sh(script: 'terraform output -raw instance_ip', returnStdout: true).trim()
-                            }
-                            
-                            withCredentials([
-                                usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS'),
-                                string(credentialsId: 'dockerhub-username', variable: 'DOCKER_REGISTRY_USER'),
-                                sshUserPrivateKey(credentialsId: 'gcp-ssh-key', keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER')
-                            ]) {
-                                sh "sleep 30"
-                                sh """
-                                    ssh -o StrictHostKeyChecking=no -i \$SSH_KEY \$SSH_USER@${vmIp} '''
-                                        echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin
-                                        
-                                        # Clone ulang di VM untuk memastikan kebersihan lingkungan build
-                                        git clone --recurse-submodules https://github.com/daiyanuthsa/grpc-ecom-be.git
-                                        cd grpc-ecom-be
+                    // Build on Dynamic VM
+                    script {
+                        def vmIp = dir(TERRAFORM_DIR) {
+                            sh(script: 'terraform output -raw instance_ip', returnStdout: true).trim()
+                        }
+                        
+                        withCredentials([
+                            usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS'),
+                            string(credentialsId: 'dockerhub-username', variable: 'DOCKER_REGISTRY_USER'),
+                            sshUserPrivateKey(credentialsId: 'gcp-ssh-key', keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER')
+                        ]) {
+                            sh "sleep 30"
+                            sh """
+                                ssh -o StrictHostKeyChecking=no -i \$SSH_KEY \$SSH_USER@${vmIp} '''
+                                    echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin
+                                    
+                                    git clone --recurse-submodules https://github.com/daiyanuthsa/grpc-ecom-be.git
+                                    cd grpc-ecom-be
 
-                                        docker build -t ${DOCKER_REGISTRY_USER}/grpc-backend:latest -f grpc.Dockerfile .
-                                        docker push ${DOCKER_REGISTRY_USER}/grpc-backend:latest
-                                        
-                                        docker build -t ${DOCKER_REGISTRY_USER}/rest-uploader:latest -f rest.Dockerfile .
-                                        docker push ${DOCKER_REGISTRY_USER}/rest-uploader:latest
+                                    docker build -t ${DOCKER_REGISTRY_USER}/grpc-backend:latest -f grpc.Dockerfile .
+                                    docker push ${DOCKER_REGISTRY_USER}/grpc-backend:latest
+                                    
+                                    docker build -t ${DOCKER_REGISTRY_USER}/rest-uploader:latest -f rest.Dockerfile .
+                                    docker push ${DOCKER_REGISTRY_USER}/rest-uploader:latest
 
-                                        docker logout
-                                    '''
-                                """
-                            }
+                                    docker logout
+                                '''
+                            """
                         }
                     }
                 }
