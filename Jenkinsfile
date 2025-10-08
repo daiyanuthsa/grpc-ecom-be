@@ -1,13 +1,32 @@
 pipeline {
     agent none
 
-    environment {
-        TERRAFORM_DIR = 'terraform/gcp_builder'
-    }
-
     stages {
+        stage('Checkout Terraform Scripts') {
+            agent { label 'built-in' }
+            steps {
+                // Hapus workspace sebelumnya untuk memastikan kebersihan
+                cleanWs() 
+                
+                // Lakukan shallow clone, tanpa submodule, tanpa tags
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: '*/main']],
+                    userRemoteConfigs: [[url: 'https://github.com/daiyanuthsa/grpc-ecom-be.git']],
+                    extensions: [
+                        [$class: 'CloneOption', shallow: true, noTags: true, depth: 1],
+                        [$class: 'SubmoduleOption', disable: true] // Secara eksplisit menonaktifkan submodule di master
+                    ]
+                ])
+            }
+        }
+        
         stage('Provision and Build on GCP') {
             agent { label 'built-in' }
+
+            environment {
+                TERRAFORM_DIR = 'terraform/gcp_builder'
+            }
 
             stages {
                 stage('Initialize Terraform') {
@@ -90,6 +109,12 @@ pipeline {
                     sh 'sshpass -p $SSH_PASS ssh -o StrictHostKeyChecking=no $SSH_USER@$DEPLOY_SERVER_IP \'cd /home/root/grpc-ecom && docker compose pull backend rest-uploader && docker compose up -d --no-deps backend rest-uploader && docker system prune -af\''
                 }
             }
+        }
+    }
+    post {
+        always {
+            // Selalu bersihkan workspace di akhir untuk menjaga kebersihan
+            cleanWs()
         }
     }
 }
