@@ -66,7 +66,6 @@ pipeline {
                                     
                                     docker build -t ${DOCKER_REGISTRY_USER}/rest-uploader:latest -f rest.Dockerfile .
                                     docker push ${DOCKER_REGISTRY_USER}/rest-uploader:latest
-
                                     docker logout
                                 '''
                             """
