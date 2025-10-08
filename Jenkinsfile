@@ -42,7 +42,7 @@ pipeline {
                     steps {
                         dir(TERRAFORM_DIR) {
                             withCredentials([file(credentialsId: 'gcp-service-account-key', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
-                                sh 'terraform apply -auto-approve -var="gcp_project_id=nama-proyek-gcp-anda"'
+                                sh 'terraform apply -auto-approve -var="gcp_project_id=myexperiment-project"'
                             }
                         }
                     }
@@ -108,9 +108,20 @@ pipeline {
     }
     
     post {
-        always {
-            // Selalu bersihkan workspace di akhir
-            cleanWs()
+        success {
+            echo 'Destroying resources after successful build...'
+            dir(TERRAFORM_DIR) {
+                withCredentials([file(credentialsId: 'gcp-service-account-key', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
+                    sh '''
+                        terraform init -reconfigure
+                        terraform destroy -auto-approve -var="gcp_project_id=nama-proyek-gcp-anda"
+                    '''
+                }
+            }
+        }
+        failure {
+            echo 'Skipping destroy because build failed before VM was provisioned.'
         }
     }
+
 }
