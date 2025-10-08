@@ -106,10 +106,11 @@ pipeline {
             dir(TERRAFORM_DIR) {
                 withCredentials([
                     file(credentialsId: 'gcp-service-account-key', variable: 'GOOGLE_APPLICATION_CREDENTIALS'),
+                    string(credentialsId: 'gcp-ssh-public-key', variable: 'GCP_SSH_PUBLIC_KEY')
                     ]) {
                     sh '''
                         terraform init -reconfigure
-                        terraform destroy -auto-approve -var="gcp_project_id=${GCP_PROJECT_ID}"
+                        terraform destroy -auto-approve -var="gcp_project_id=${GCP_PROJECT_ID}" -var="ssh_public_key_content=${GCP_SSH_PUBLIC_KEY}"
                     '''
                 }
             }
