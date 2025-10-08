@@ -43,7 +43,7 @@ resource "google_compute_instance" "build_agent" {
 
   // Menambahkan kunci SSH publik agar Jenkins bisa login
   metadata = {
-    ssh-keys = "${var.ssh_user}:${file(var.ssh_public_key_path)}"
+    ssh-keys = "${var.ssh_user}:${var.ssh_public_key_content}"
   }
 
   // Service account untuk memberikan izin (opsional, tapi direkomendasikan)

@@ -21,8 +21,8 @@ variable "ssh_user" {
   default     = "jenkins"
 }
 
-variable "ssh_public_key_path" {
-  description = "Path ke file kunci SSH publik."
+variable "ssh_public_key_content" {
+  description = "Konten dari kunci SSH publik."
   type        = string
-  default     = "~/.ssh/id_rsa.pub"
+  sensitive   = true // Tandai sebagai sensitif
 }
