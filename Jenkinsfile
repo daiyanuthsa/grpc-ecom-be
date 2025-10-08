@@ -80,8 +80,11 @@ pipeline {
                 always {
                         echo 'Tearing down the infrastructure...'
                         dir(TERRAFORM_DIR) {
-                            withCredentials([file(credentialsId: 'gcp-service-account-key', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
-                                sh "terraform destroy -auto-approve -var=\"gcp_project_id=${GCP_PROJECT_ID}\""
+                            withCredentials([
+                                file(credentialsId: 'gcp-service-account-key', variable: 'GOOGLE_APPLICATION_CREDENTIALS'),
+                                string(credentialsId: 'gcp-ssh-public-key', variable: 'GCP_SSH_PUBLIC_KEY')
+                            ]) {
+                                sh "terraform destroy -auto-approve -var=\"gcp_project_id=${GCP_PROJECT_ID}\" -var=\"ssh_public_key_content=${GCP_SSH_PUBLIC_KEY}\""
                             }
                     }
                 }
