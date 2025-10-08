@@ -82,7 +82,6 @@ pipeline {
                                 EOF
                             """
                         }
-
                         // 🔹 Step 2: Clone repository
                         stage('Remote: Git Clone') {
                             sh """
