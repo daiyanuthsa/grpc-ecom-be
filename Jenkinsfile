@@ -104,10 +104,12 @@ pipeline {
         success {
             echo 'Destroying resources after successful build...'
             dir(TERRAFORM_DIR) {
-                withCredentials([file(credentialsId: 'gcp-service-account-key', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
+                withCredentials([
+                    file(credentialsId: 'gcp-service-account-key', variable: 'GOOGLE_APPLICATION_CREDENTIALS'),
+                    ]) {
                     sh '''
                         terraform init -reconfigure
-                        terraform destroy -auto-approve -var="gcp_project_id=nama-proyek-gcp-anda"
+                        terraform destroy -auto-approve -var="gcp_project_id=${GCP_PROJECT_ID}"
                     '''
                 }
             }

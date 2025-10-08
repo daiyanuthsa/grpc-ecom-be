@@ -7,7 +7,7 @@ provider "google" {
 resource "google_compute_instance" "build_agent" {
   name         = "jenkins-build-agent-arm64-${random_id.id.hex}"
   # T2A adalah seri VM ARM64 yang paling terjangkau
-  machine_type = "c4a-standard-2" 
+  machine_type = "t2a-standard-2" 
   zone         = var.gcp_zone
 
   boot_disk {
