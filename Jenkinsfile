@@ -2,6 +2,10 @@ pipeline {
     agent { label 'built-in' } // Jalankan semua orkestrasi di master
 
 
+    options {
+        skipDefaultCheckout()  // ⬅️ Matikan auto-checkout bawaan
+    }
+
     environment {
         TERRAFORM_DIR = 'terraform/gcp_builder'
     }
@@ -15,9 +19,15 @@ pipeline {
 
         stage('Checkout Source') {
             steps {
-                checkout scm
+                git(
+                    url: 'https://github.com/daiyanuthsa/grpc-ecom-be.git',
+                    branch: 'main',
+                    changelog: false,
+                    poll: false
+                )
             }
         }
+
         stage('Provision and Build on GCP') {
             stages {
                 stage('Initialize Terraform') {
