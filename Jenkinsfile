@@ -1,11 +1,6 @@
 pipeline {
     agent { label 'built-in' } // Jalankan semua orkestrasi di master
 
-    // Opsi untuk menangani submodule secara otomatis saat checkout awal
-    options {
-        // Ini akan menjalankan 'git submodule update --init --recursive'
-        submodule(recursive: true)
-    }
 
     environment {
         TERRAFORM_DIR = 'terraform/gcp_builder'
