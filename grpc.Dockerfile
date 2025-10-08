@@ -14,7 +14,8 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o /grpc-server ./cmd/grpc
 
 # ---- Tahap 2: Final ----
-FROM scratch
+FROM debian:bullseye-slim
+RUN apt-get update && apt-get install -y ca-certificates
 
 # Salin HANYA file executable yang sudah jadi
 COPY --from=builder /grpc-server /grpc-server

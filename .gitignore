@@ -1,3 +1,16 @@
 # gRPC
 .env
 generate-proto.sh
+
+# Terraform state & variables
+*.tfstate
+*.tfstate.*
+*.tfvars
+secret.auto.tfvars
+
+# Kredensial & kunci
+*.json
+*.pem
+
+# Cache
+.terraform/

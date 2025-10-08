@@ -1,56 +1,88 @@
 pipeline {
-    // Tidak ada agent global, kita tentukan per-stage
     agent none
 
+    environment {
+        TERRAFORM_DIR = 'terraform/gcp_builder'
+    }
+
     stages {
-        // TAHAP INI DIJALANKAN DI VM TENCENT
-        stage('Build & Push Images on Remote Agent') {
-            agent { label 'tencent-vm' } // Pastikan label ini sesuai
+        stage('Provision and Build on GCP') {
+            agent { label 'built-in' }
 
             stages {
-                stage('Login to Docker') {
+                stage('Initialize Terraform') {
                     steps {
-                        withCredentials([
-                            usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')
-                        ]) {
-                            sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
+                        dir(TERRAFORM_DIR) {
+                            sh 'terraform init'
                         }
                     }
                 }
-                stage('Build and Push gRPC Image') {
+
+                stage('Apply Terraform to Create VM') {
                     steps {
-                        withCredentials([string(credentialsId: 'dockerhub-username', variable: 'DOCKER_REGISTRY_USER')]) {
-                            script {
-                                def imageName = "${DOCKER_REGISTRY_USER}/grpc-backend:latest"
-                                // Gunakan buildx untuk target arm64
-                                sh "docker buildx build --platform linux/arm64 -t ${imageName} -f grpc.Dockerfile --push ."
+                        dir(TERRAFORM_DIR) {
+                            withCredentials([file(credentialsId: 'gcp-service-account-key', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
+                                sh 'terraform apply -auto-approve -var="gcp_project_id=myexperiment-project"'
                             }
                         }
                     }
                 }
-                stage('Build and Push REST Image') {
+
+                stage('Build Images on Dynamic VM') {
                     steps {
-                        withCredentials([string(credentialsId: 'dockerhub-username', variable: 'DOCKER_REGISTRY_USER')]) {
-                            script {
-                                def imageName = "${DOCKER_REGISTRY_USER}/rest-uploader:latest"
-                                // Gunakan buildx untuk target arm64
-                                sh "docker buildx build --platform linux/arm64 -t ${imageName} -f rest.Dockerfile --push ."
+                        script {
+                            def vmIp = dir(TERRAFORM_DIR) {
+                                sh(script: 'terraform output -raw instance_ip', returnStdout: true).trim()
+                            }
+                            
+                            withCredentials([
+                                usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS'),
+                                string(credentialsId: 'dockerhub-username', variable: 'DOCKER_REGISTRY_USER'),
+                                sshUserPrivateKey(credentialsId: 'gcp-ssh-key', keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER')
+                            ]) {
+                                sh "sleep 30"
+
+                                // Perintah build di dalam VM sekarang lebih sederhana
+                                sh """
+                                    ssh -o StrictHostKeyChecking=no -i \$SSH_KEY \$SSH_USER@${vmIp} '''
+                                        echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin
+                                        
+                                        git clone https://github.com/daiyanuthsa/grpc-ecom-be.git
+                                        cd grpc-ecom-be
+
+                                        # Build & Push gRPC Image (tanpa buildx)
+                                        docker build -t ${DOCKER_REGISTRY_USER}/grpc-backend:latest -f grpc.Dockerfile .
+                                        docker push ${DOCKER_REGISTRY_USER}/grpc-backend:latest
+                                        
+                                        # Build & Push REST Image (tanpa buildx)
+                                        docker build -t ${DOCKER_REGISTRY_USER}/rest-uploader:latest -f rest.Dockerfile .
+                                        docker push ${DOCKER_REGISTRY_USER}/rest-uploader:latest
+
+                                        docker logout
+                                    '''
+                                """
                             }
                         }
                     }
                 }
             }
-
             post {
                 always {
-                    sh 'docker logout'
+                    stage('Destroy Terraform Infrastructure') {
+                        steps {
+                            dir(TERRAFORM_DIR) {
+                                withCredentials([file(credentialsId: 'gcp-service-account-key', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
+                                    sh 'terraform destroy -auto-approve -var="gcp_project_id=nama-proyek-gcp-anda"'
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
 
-        // TAHAP INI DIJALANKAN DI JENKINS MASTER (STB ANDA)
         stage('Deploy Services on Local Server') {
-            agent { label 'built-in' } // Menggunakan label yang benar untuk Master
+            agent { label 'built-in' }
             steps {
                 withCredentials([
                     usernamePassword(credentialsId: 'deploy-server-credentials', usernameVariable: 'SSH_USER', passwordVariable: 'SSH_PASS'),
