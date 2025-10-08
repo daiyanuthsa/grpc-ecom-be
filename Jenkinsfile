@@ -50,8 +50,8 @@ pipeline {
                     }
 
                     withCredentials([
-                        usernamePassword(credentialsId: 'dockerhub-credentials', passwordVariable: 'DOCKER_PASS'),
-                        string(credentialsId: 'dockerhub-username', variable: 'DOCKER_USER'),
+                        usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS'),
+                        // string(credentialsId: 'dockerhub-username', variable: 'DOCKER_USER'),
                         sshUserPrivateKey(credentialsId: 'gcp-ssh-key', keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER')
                     ]) {
 
