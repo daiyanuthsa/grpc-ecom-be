@@ -59,6 +59,19 @@ pipeline {
                         sshUserPrivateKey(credentialsId: 'gcp-ssh-key', keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER')
                     ]) {
 
+                        stage('Waiting for SSH to become ready'){
+                            sh """
+                                echo '⏳ Waiting for SSH to become ready...'
+                                for i in {1..15}; do
+                                    if ssh -o StrictHostKeyChecking=no -i \$SSH_KEY \$SSH_USER@${vmIp} 'echo SSH OK' 2>/dev/null; then
+                                        echo '✅ SSH is ready!'
+                                        break
+                                    fi
+                                    echo "SSH not ready yet (attempt \$i)..."
+                                    sleep 10
+                                done
+                            """
+                        }
                         // 🔹 Step 1: Docker Login
                         stage('Remote: Docker Login') {
                             sh """

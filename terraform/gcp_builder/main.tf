@@ -4,11 +4,25 @@ provider "google" {
   zone    = var.gcp_zone
 }
 
+resource "google_compute_firewall" "allow_ssh" {
+  name    = "allow-ssh"
+  network = "default"
+
+  allow {
+    protocol = "tcp"
+    ports    = ["22"]
+  }
+
+  source_ranges = ["0.0.0.0/0"]
+  target_tags   = ["allow-ssh"]
+}
+
 resource "google_compute_instance" "build_agent" {
   name         = "jenkins-build-agent-arm64-${random_id.id.hex}"
   # T2A adalah seri VM ARM64 yang paling terjangkau
   machine_type = "t2a-standard-2" 
   zone         = var.gcp_zone
+  tags = ["allow-ssh"]
 
   boot_disk {
     initialize_params {
