@@ -2,24 +2,7 @@ pipeline {
     agent none
 
     stages {
-        stage('Checkout Terraform Scripts') {
-            agent { label 'built-in' }
-            steps {
-                // Hapus workspace sebelumnya untuk memastikan kebersihan
-                cleanWs() 
-                
-                // Lakukan shallow clone, tanpa submodule, tanpa tags
-                checkout([
-                    $class: 'GitSCM',
-                    branches: [[name: '*/main']],
-                    userRemoteConfigs: [[url: 'https://github.com/daiyanuthsa/grpc-ecom-be.git']],
-                    extensions: [
-                        [$class: 'CloneOption', shallow: true, noTags: true, depth: 1],
-                        [$class: 'SubmoduleOption', disable: true] // Secara eksplisit menonaktifkan submodule di master
-                    ]
-                ])
-            }
-        }
+
         
         stage('Provision and Build on GCP') {
             agent { label 'built-in' }
@@ -27,8 +10,28 @@ pipeline {
             environment {
                 TERRAFORM_DIR = 'terraform/gcp_builder'
             }
+            options {
+                // shallow clone untuk menghemat ruang di Jenkins Master
+                skipDefaultCheckout true 
+            }
 
             stages {
+                stage('Checkout Terraform Scripts'){
+                    steps{
+                        cleanWs()
+
+                        // Lakukan checkout eksplisit yang ringan di sini
+                        checkout([
+                            $class: 'GitSCM',
+                            branches: [[name: '*/main']],
+                            userRemoteConfigs: [[url: 'https://github.com/daiyanuthsa/grpc-ecom-be.git']],
+                            extensions: [
+                                [$class: 'CloneOption', shallow: true, noTags: true, depth: 1],
+                                [$class: 'SubmoduleOption', disable: true]
+                            ]
+                        ])
+                    }
+                }
                 stage('Initialize Terraform') {
                     steps {
                         dir(TERRAFORM_DIR) {
