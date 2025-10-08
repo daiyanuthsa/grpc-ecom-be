@@ -12,6 +12,11 @@ pipeline {
     }
 
     stages {
+        stage('Checkout Source') {
+            steps {
+                checkout scm
+            }
+        }
         stage('Provision and Build on GCP') {
             stages {
                 stage('Initialize Terraform') {
